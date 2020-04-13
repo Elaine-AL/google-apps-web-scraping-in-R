@@ -1,0 +1,184 @@
+---
+title: "Google play store web scrapping"
+author: "Elaine Lwane"
+date: "13 April 2020"
+output: html_document
+---
+
+
+```{r}
+library(readxl)
+library(RSelenium)
+library(rvest)
+library(tidyverse)
+library()
+```
+
+
+```{r}
+# Get your APKs data
+
+appsdata = read_xlsx("apps.xlsx")
+
+#clean it
+appsdata$Appapk = sub(".*? ", "", appsdata$ppp)
+
+# create urls from the apk extensions 
+appsdata$url = paste("https://play.google.com/store/apps/details?id=", appsdata$Appapk, sep = "")
+
+# start a selenium server that will assist in automatically scraping all the 1810 urls
+driver = rsDriver(browser = c("chrome"), chromever = "80.0.3987.106", port = 4362L)
+remdr = driver[["client"]]
+remdr$open()
+
+# We need to get the name of the application, company name, category of the application, ratings of the app and the number of people rated, price, the last update date, size of the application, number of installs, the current version, the number of reviews and the android version in support.
+
+# Create a for loop that will all that information for each of the 1810 application urls
+
+Appname = c()
+Company = c()
+Category = c()
+Categoryurl = c()
+N_ratings = c()
+Ratings = c()
+Price = c()
+Updated = c()
+Size = c()
+Installs = c()
+C_version = c()
+Android = c()
+Reviews = c()
+
+for(h in appsdata$url) {
+  appna = tryCatch(remdr$navigate(h), error = function(e) {NA})
+  appna = tryCatch(remdr$getCurrentUrl()[[1]], error = function(e) {NA})
+  Categoryurl = append(Categoryurl, appna) # get the url
+   
+  appna2 = try(remdr$getPageSource(header = TRUE)[[1]] %>% read_html() %>% html_nodes("title") %>% html_text(), silent = TRUE)
+  Appname = append(Appname, appna2) # application name
+
+  prica = ifelse(is.null(tryCatch(remdr$getPageSource(header = TRUE)[[1]] %>% read_html() %>% html_nodes("div.NznqUc") %>% html_text(), error = function(e){NA} )),
+                  "NA",
+                  tryCatch(remdr$getPageSource(header = TRUE)[[1]] %>% read_html() %>% html_nodes("div.NznqUc") %>% html_text(), error = function(e){NA} ))
+  Price = append(Price, prica) # price of the application
+  #
+  cats = ifelse(is.null(tryCatch(remdr$getPageSource(header = TRUE)[[1]] %>% read_html() %>% html_nodes(".T32cc.UAO9ie") %>% html_text() %>% pluck(2), error = function(w) {message(NA)}, finally = "NA")),
+                "NA",
+                tryCatch(remdr$getPageSource(header = TRUE)[[1]] %>% read_html() %>% html_nodes(".T32cc.UAO9ie") %>% html_text() %>% pluck(2), error = function(w) {message(NA)}, finally = "NA"))
+   Category = append(Category, cats) # category of the application
+  
+
+  comps = ifelse(is.null(try(remdr$getPageSource(header = TRUE)[[1]] %>% read_html() %>% html_nodes(".T32cc.UAO9ie") %>% html_text() %>% pluck(1), silent = TRUE)),
+                 "NA",
+                 try(remdr$getPageSource(header = TRUE)[[1]] %>% read_html() %>% html_nodes(".T32cc.UAO9ie") %>% html_text() %>% pluck(1), silent = TRUE))
+  Company = append(Company, comps) # the company name
+  #
+  nrats = ifelse(is.null(try(remdr$getPageSource(header = TRUE)[[1]] %>% read_html() %>% html_nodes(".AYi5wd.TBRnV") %>% html_text(), silent = TRUE)),
+                 "NA",
+                 try(remdr$getPageSource(header = TRUE)[[1]] %>% read_html() %>% html_nodes(".AYi5wd.TBRnV") %>% html_text(), silent = TRUE))
+  N_ratings = append(N_ratings, nrats) # number of people rated the app
+  #
+  rats = ifelse(is.null(try(remdr$getPageSource(header = TRUE)[[1]] %>% read_html() %>% html_nodes(".BHMmbe") %>% html_text(), silent = TRUE)),
+                "NA",
+                try(remdr$getPageSource(header = TRUE)[[1]] %>% read_html() %>% html_nodes(".BHMmbe") %>% html_text(), silent = TRUE))
+  Ratings = append(Ratings, rats) # app ratings
+
+  ups = ifelse(is.null(try(remdr$getPageSource(header = TRUE)[[1]] %>% read_html() %>% html_nodes(".hAyfc") %>% html_text() %>% pluck(1), silent = TRUE)), 
+               "NA",
+               try(remdr$getPageSource(header = TRUE)[[1]] %>% read_html() %>% html_nodes(".hAyfc") %>% html_text() %>% pluck(1), silent = TRUE))
+  Updated = append(Updated, ups) # last update date
+
+  sizs = ifelse(is.null(try(remdr$getPageSource(header = TRUE)[[1]] %>% read_html() %>% html_nodes(".hAyfc") %>% html_text() %>% pluck(2), silent = TRUE)), 
+                "NA", 
+                try(remdr$getPageSource(header = TRUE)[[1]] %>% read_html() %>% html_nodes(".hAyfc") %>% html_text() %>% pluck(2), silent = TRUE))
+  Size = append(Size, sizs) # size of the app
+
+  insts = ifelse(is.null(try(remdr$getPageSource(header = TRUE)[[1]] %>% read_html() %>% html_nodes(".hAyfc") %>% html_text() %>% pluck(3), silent = TRUE)), 
+                 "NA", 
+                 try(remdr$getPageSource(header = TRUE)[[1]] %>% read_html() %>% html_nodes(".hAyfc") %>% html_text() %>% pluck(3), silent = TRUE))
+  Installs = append(Installs, insts) # number of installs
+
+  cvss = ifelse(is.null(try(remdr$getPageSource(header = TRUE)[[1]] %>% read_html() %>% html_nodes(".hAyfc") %>% html_text() %>% pluck(4), silent = TRUE)), 
+                "NA",
+                try(remdr$getPageSource(header = TRUE)[[1]] %>% read_html() %>% html_nodes(".hAyfc") %>% html_text() %>% pluck(4), silent = TRUE))
+  C_version = append(C_version, cvss) # current version of the app
+
+  ands = ifelse(is.null(try(remdr$getPageSource(header = TRUE)[[1]] %>% read_html() %>% html_nodes(".hAyfc") %>% html_text() %>% pluck(5), silent = TRUE)), 
+                "NA",
+                try(remdr$getPageSource(header = TRUE)[[1]] %>% read_html() %>% html_nodes(".hAyfc") %>% html_text() %>% pluck(5), silent = TRUE))
+  Android = append(Android, ands) # android version in support
+  
+  nrevs = ifelse(is.null(tryCatch(n_distinct(remdr$getPageSource(header = TRUE)[[1]] %>% read_html() %>% html_nodes(".UD7Dzf") %>% html_text()), error = function(e) {NA})),
+                 yes = "NA", 
+                 tryCatch(n_distinct(remdr$getPageSource(header = TRUE)[[1]] %>% read_html() %>% html_nodes(".UD7Dzf") %>% html_text()), error = function(e) {NA}))
+  Reviews = append(Reviews, nrevs)
+  
+}
+
+
+appsdata$Appname = Appname
+appsdata$Price = Price
+appsdata$Category = Category
+appsdata$Categoryurl = Categoryurl
+appsdata$Company = Company
+appsdata$N_ratings = N_ratings
+appsdata$Ratings = Ratings
+appsdata$Updated = Updated
+appsdata$Size = Size
+appsdata$Installs = Installs
+appsdata$C_version = C_version
+appsdata$Android = Android
+appsdata$Reviews = Reviews
+
+
+```
+
+```{r}
+# clean your final data now!
+
+appsdata$Installs[startsWith(appsdata$Installs, prefix = "Error : \t Sum")] = "Error"
+appsdata$Installs = gsub("SizeVaries with device", Size19M$C_version[1], appsdata$Installs)
+appsdata$Installs = gsub("\\+", "", appsdata$Installs)
+appsdata$Installs = gsub("Installs", "", appsdata$Installs)
+appsdata$Installs = gsub(",", "", appsdata$Installs)
+
+appsdata$N_ratings = as.numeric(gsub(",", "", appsdata$N_ratings))
+
+appsdata$Android[startsWith(appsdata$Android, prefix = "Error : \t Sum")] = "Error"
+appsdata$Android = gsub("Current Version", "", appsdata$Android)
+appsdata$Android = gsub("Requires Android", "", appsdata$Android)
+appsdata$Android[appsdata$Android == "4.4W and up"] = "4.4 and up"
+
+appsdata$C_version[startsWith(appsdata$C_version, prefix = "Error : \t Sum")] = "Error"
+appsdata$C_version = gsub("Current Version", "", appsdata$C_version)
+
+appsdata = appsdata %>% mutate(isfree = ifelse(Price == "Install", "Yes", "No" ))
+
+appsdata$Size[startsWith(appsdata$Size, prefix = "Error : \t Sum")] = "Error"
+appsdata$Size = gsub("Size", "", appsdata$Size)
+appsdata$Size = ifelse(endsWith(appsdata$Size, "k"), paste(round(as.numeric(gsub("k", "", appsdata$Size))/1000,1), "M", sep = ""), appsdata$Size)
+appsdata$Size = gsub("M", "", appsdata$Size)
+appsdatas$Size2 = sub("\\..*", "", appsdatas$Size)
+
+
+appsdata$Updated[startsWith(appsdata$Updated, prefix = "Error : \t Sum")] = "Error"
+appsdata$Updated = gsub("Updated", "", appsdata$Updated)
+
+appsdata$C_version[appsdata$C_version == "Fifteen"] = "15"
+appsdata$C_version[appsdata$C_version == "Third"] = "3"
+appsdata$C_version = ifelse(startsWith(appsdata$C_version, "V"), 
+                           yes = gsub("V", "", appsdata$C_version), 
+                           no = ifelse(startsWith(appsdata$C_version, "v"),
+                                       yes = gsub("v", "", appsdata$C_version),
+                                       no = appsdata$C_version))
+appsdata$C_version = ifelse(startsWith(appsdata$C_version, "T"),
+                           yes = gsub("T", "", appsdata$C_version), 
+                           no = ifelse(startsWith(appsdata$C_version,"rele"),
+                                       yes = gsub("release_", "", appsdata$C_version), 
+                                       no = ifelse(startsWith(appsdata$C_version, "CA")|startsWith(appsdata$C_version, "DA")|startsWith(appsdata$C_version, "Elma")|startsWith(appsdata$C_version, "elma"), 
+                                                   yes = "0", 
+                                                   no = appsdata$C_version) ))
+
+appsdata$cVers = sub("\\..*", "", appsdata$C_version)
+```
+
