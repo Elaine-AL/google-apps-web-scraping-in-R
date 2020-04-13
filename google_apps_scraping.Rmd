@@ -11,7 +11,7 @@ library(readxl)
 library(RSelenium)
 library(rvest)
 library(tidyverse)
-library()
+
 ```
 
 
@@ -33,7 +33,7 @@ remdr$open()
 
 # We need to get the name of the application, company name, category of the application, ratings of the app and the number of people rated, price, the last update date, size of the application, number of installs, the current version, the number of reviews and the android version in support.
 
-# Create a for loop that will all that information for each of the 1810 application urls
+# Create a for loop that will get all that information for each of the 1810 application urls
 
 Appname = c()
 Company = c()
@@ -61,7 +61,7 @@ for(h in appsdata$url) {
                   "NA",
                   tryCatch(remdr$getPageSource(header = TRUE)[[1]] %>% read_html() %>% html_nodes("div.NznqUc") %>% html_text(), error = function(e){NA} ))
   Price = append(Price, prica) # price of the application
-  #
+  
   cats = ifelse(is.null(tryCatch(remdr$getPageSource(header = TRUE)[[1]] %>% read_html() %>% html_nodes(".T32cc.UAO9ie") %>% html_text() %>% pluck(2), error = function(w) {message(NA)}, finally = "NA")),
                 "NA",
                 tryCatch(remdr$getPageSource(header = TRUE)[[1]] %>% read_html() %>% html_nodes(".T32cc.UAO9ie") %>% html_text() %>% pluck(2), error = function(w) {message(NA)}, finally = "NA"))
@@ -72,12 +72,12 @@ for(h in appsdata$url) {
                  "NA",
                  try(remdr$getPageSource(header = TRUE)[[1]] %>% read_html() %>% html_nodes(".T32cc.UAO9ie") %>% html_text() %>% pluck(1), silent = TRUE))
   Company = append(Company, comps) # the company name
-  #
+  
   nrats = ifelse(is.null(try(remdr$getPageSource(header = TRUE)[[1]] %>% read_html() %>% html_nodes(".AYi5wd.TBRnV") %>% html_text(), silent = TRUE)),
                  "NA",
                  try(remdr$getPageSource(header = TRUE)[[1]] %>% read_html() %>% html_nodes(".AYi5wd.TBRnV") %>% html_text(), silent = TRUE))
   N_ratings = append(N_ratings, nrats) # number of people rated the app
-  #
+  
   rats = ifelse(is.null(try(remdr$getPageSource(header = TRUE)[[1]] %>% read_html() %>% html_nodes(".BHMmbe") %>% html_text(), silent = TRUE)),
                 "NA",
                 try(remdr$getPageSource(header = TRUE)[[1]] %>% read_html() %>% html_nodes(".BHMmbe") %>% html_text(), silent = TRUE))
